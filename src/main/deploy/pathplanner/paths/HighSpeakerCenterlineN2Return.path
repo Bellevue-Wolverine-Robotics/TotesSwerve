@@ -1,0 +1,141 @@
+{
+  "version": 1.0,
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 0.73,
+        "y": 6.62
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.048666786792263,
+        "y": 6.7241388044029655
+      },
+      "isLocked": false,
+      "linkedName": "TopSpeaker"
+    },
+    {
+      "anchor": {
+        "x": 8.293644849397962,
+        "y": 5.800300603450209
+      },
+      "prevControl": {
+        "x": 9.030376579271676,
+        "y": 5.613194132371172
+      },
+      "nextControl": {
+        "x": 7.9360527619599806,
+        "y": 5.8911176415296955
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 0.73,
+        "y": 6.62
+      },
+      "prevControl": {
+        "x": 1.2057927218565005,
+        "y": 7.331049617052808
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "TopSpeaker"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.05,
+      "rotationDegrees": -130.0,
+      "rotateFast": false
+    },
+    {
+      "waypointRelativePos": 0.35,
+      "rotationDegrees": 170.2291447191198,
+      "rotateFast": true
+    },
+    {
+      "waypointRelativePos": 0.85,
+      "rotationDegrees": 171.51986105015604,
+      "rotateFast": false
+    },
+    {
+      "waypointRelativePos": 1.5,
+      "rotationDegrees": -173.34649448732242,
+      "rotateFast": false
+    },
+    {
+      "waypointRelativePos": 1.85,
+      "rotationDegrees": -130.0,
+      "rotateFast": false
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "New Constraints Zone",
+      "minWaypointRelativePos": 0.15,
+      "maxWaypointRelativePos": 1.05,
+      "constraints": {
+        "maxVelocity": 4.0,
+        "maxAcceleration": 3.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0
+      }
+    }
+  ],
+  "eventMarkers": [
+    {
+      "name": "intake",
+      "waypointRelativePos": 0.5,
+      "command": {
+        "type": "parallel",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "Intake"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rev launcher",
+      "waypointRelativePos": 1.55,
+      "command": {
+        "type": "parallel",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "RevLauncher"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.8,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -120.0,
+    "rotateFast": false
+  },
+  "reversed": false,
+  "folder": null,
+  "previewStartingState": {
+    "rotation": -120.0,
+    "velocity": 0
+  },
+  "useDefaultConstraints": false
+}

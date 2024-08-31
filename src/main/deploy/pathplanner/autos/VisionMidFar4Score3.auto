@@ -1,0 +1,55 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.33,
+      "y": 5.55
+    },
+    "rotation": 180.0
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "SubwooferLaunch"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "SpeakerToMidNote"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "VisionLaunch"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "MidNoteToCenterMidNodeLaunch"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "VisionLaunch"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "launchPosSecondCenterLineNoteLaunch"
+          }
+        }
+      ]
+    }
+  },
+  "folder": "Vision Autos",
+  "choreoAuto": false
+}

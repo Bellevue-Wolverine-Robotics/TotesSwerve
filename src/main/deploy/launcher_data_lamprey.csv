@@ -1,0 +1,49 @@
+# test comment
+
+# DISTANCE (meters), ANGLE (degrees), RPM (velocity)
+
+# These RPMs are target RPMs, actual was much lower
+
+# Front subwoofer
+1.30, 257, 3500
+# Front bumper at autoline
+2.13, 236, 3500
+
+# dcmps
+
+# On Autoline N2
+2.81, 225, 3600
+
+#chain
+# 3.84, 213, 3600
+
+# wing line amp side
+5.93, 207, 4000
+
+3.82, 217, 4000
+4.32, 213, 4000
+4.10, 212, 4000
+
+# bad values?
+
+# Near podium
+# 5.66, 225, 3600
+# Auto point 1 (X 2.870, Y 2.196, theta 130.6)
+# 4.46, 230, 3600
+
+# After this, these are setpoint angles
+# Auto point 2 (X 5.699, Y 7.501, theta -162.8)
+# 5.55, 226, 4400
+# Auto point 3 (X 4.299, Y 5.134, theta 176.222)
+# 4.32, 232, 4300 # Might be a little low, and could probably lower RPM- Ran out of time to fully test
+
+
+# Pre 3/28 values:
+# 1.397, 254, 4500
+# 2.05, 249, 4500
+# 2.6, 245, 4500
+# 3.2, 243, 4500
+# 5, 240, 5000
+# 5.64,239, 5000
+# 6, 238, 5000
+# 14, 233, 5000

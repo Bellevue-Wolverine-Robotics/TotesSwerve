@@ -1,0 +1,42 @@
+{
+  "location": {
+    "front": 12.5,
+    "left": 12.5
+  },
+  "absoluteEncoderOffset": 340.01562500000003,
+  "drive": {
+    "type": "falcon",
+    "id": 1,
+    "canbus": "Drivebase"
+  },
+  "angle": {
+    "type": "falcon",
+    "id": 2,
+    "canbus": "Drivebase"
+  },
+  "encoder": {
+    "type": "cancoder",
+    "id": 3,
+    "canbus": "Drivebase"
+  },
+  "inverted": {
+    "drive": false,
+    "angle": false
+  },
+  "driveTuning": {
+    "p": 0.080223,
+    "i": 0,
+    "d": 0,
+    "kS": 0.20631,
+    "kV": 1.8319,
+    "kA": 0.19741
+  },
+  "angleTuning": {
+    "p": 69.289,
+    "i": 0,
+    "d": 6.5371,
+    "kS": 0.1762,
+    "kV": 2.2121,
+    "kA": 0.32267
+  }
+}

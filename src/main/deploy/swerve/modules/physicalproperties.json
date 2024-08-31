@@ -1,0 +1,20 @@
+{
+  "optimalVoltage": 12,
+  "wheelGripCoefficientOfFriction": 1.19,
+  "statorLimit": {
+    "drive": 120,
+    "angle": 50
+  },
+  "supplyLimit": {
+    "drive": 80,
+    "angle": 30
+  },
+  "conversionFactor": {
+    "angle": 19.2,
+    "drive": 0.06681204078043
+  },
+  "rampRate": {
+    "drive": 0.25,
+    "angle": 0.25
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "version": 1.0,
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 8.41058639382236,
+        "y": 0.77
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 5.903394550867245,
+        "y": 1.2307133785696136
+      },
+      "isLocked": false,
+      "linkedName": "CenterLineN5"
+    },
+    {
+      "anchor": {
+        "x": 2.9089022069531514,
+        "y": 1.9539173222406319
+      },
+      "prevControl": {
+        "x": 4.649370441598027,
+        "y": 1.5685619942668465
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "SourceVisionLaunch"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.35,
+      "rotationDegrees": 180.0,
+      "rotateFast": false
+    },
+    {
+      "waypointRelativePos": 0.75,
+      "rotationDegrees": 147.9081562884914,
+      "rotateFast": true
+    }
+  ],
+  "constraintZones": [],
+  "eventMarkers": [
+    {
+      "name": "rev launcher",
+      "waypointRelativePos": 0.15,
+      "command": {
+        "type": "parallel",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "RevLauncher"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.5,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 124.79,
+    "rotateFast": false
+  },
+  "reversed": false,
+  "folder": null,
+  "previewStartingState": {
+    "rotation": 180.0,
+    "velocity": 0
+  },
+  "useDefaultConstraints": false
+}

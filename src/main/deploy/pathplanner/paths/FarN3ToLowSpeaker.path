@@ -1,0 +1,118 @@
+{
+  "version": 1.0,
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 8.39889223937992,
+        "y": 4.1046482092964185
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.975998096140336,
+        "y": 4.141627021992783
+      },
+      "isLocked": false,
+      "linkedName": "CenterLineN3"
+    },
+    {
+      "anchor": {
+        "x": 5.709473761289865,
+        "y": 3.9844670680332355
+      },
+      "prevControl": {
+        "x": 6.296568107481721,
+        "y": 4.11256037992964
+      },
+      "nextControl": {
+        "x": 5.2010150867148575,
+        "y": 3.873530629944143
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.2,
+        "y": 3.23
+      },
+      "prevControl": {
+        "x": 4.86382600669331,
+        "y": 3.5320487973817536
+      },
+      "nextControl": {
+        "x": 2.9730416217589193,
+        "y": 2.6717192173123094
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 0.7275269251393202,
+        "y": 4.4671669970120575
+      },
+      "prevControl": {
+        "x": 1.6947995088736767,
+        "y": 3.084897857158463
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "LowSpeaker"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.95,
+      "rotationDegrees": -176.88132282738164,
+      "rotateFast": false
+    },
+    {
+      "waypointRelativePos": 2.0,
+      "rotationDegrees": -146.92325429708612,
+      "rotateFast": false
+    },
+    {
+      "waypointRelativePos": 2.9499999999999997,
+      "rotationDegrees": 120.0,
+      "rotateFast": false
+    }
+  ],
+  "constraintZones": [],
+  "eventMarkers": [
+    {
+      "name": "retract",
+      "waypointRelativePos": 0.5,
+      "command": {
+        "type": "parallel",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "RetractPivot"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 120.0,
+    "rotateFast": false
+  },
+  "reversed": false,
+  "folder": null,
+  "previewStartingState": {
+    "rotation": 180.0,
+    "velocity": 0
+  },
+  "useDefaultConstraints": false
+}

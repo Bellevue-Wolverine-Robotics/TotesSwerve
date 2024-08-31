@@ -1,0 +1,517 @@
+package frc.team949.robot.subsystems;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.networktables.NetworkTableEvent;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.units.BaseUnits;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.Voltage;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.team949.robot.Robot;
+import frc.team949.robot.Robot.RobotType;
+import frc.team949.robot.Subsystems.SubsystemConstants;
+import java.io.File;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+import swervelib.SwerveDrive;
+import swervelib.SwerveModule;
+import swervelib.math.SwerveMath;
+import swervelib.parser.SwerveParser;
+import swervelib.telemetry.SwerveDriveTelemetry;
+import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
+
+public class DrivebaseSubsystem extends SubsystemBase {
+
+	// SWERVE CONSTANTS (that aren't in deploy dir)
+
+	public static final double MAX_SPEED =
+			Robot.getInstance().getRobotType() == RobotType.BONK
+					? 3.0
+					: Robot.getInstance().getRobotType() == RobotType.COMPETITION
+							? 6.0
+							: Robot.getInstance().getRobotType() == RobotType.CRANE ? 3.0 : 1.0;
+
+	// Auto align stuff, dw abt it
+	public static final double MAX_ACCELERATION = 3;
+	public static final double MAX_ANGULAR_VELOCITY = 540;
+	public static final double MAX_ANGULAR_ACCELERAITON = 720;
+
+	// distance from center of the robot to the furthest module
+	private static final double DRIVEBASE_RADIUS =
+			Robot.getInstance().getRobotType() == RobotType.BONK
+					? 0.305328701
+					: Robot.getInstance().getRobotType() == RobotType.CRANE
+							? 0.3937
+							: Robot.getInstance().getRobotType() == RobotType.COMPETITION ? 0.3 : 0.3;
+	private static final double JOYSTICK_DEADBAND = 0.1;
+	private static final double HEADING_CORRECTION_DEADBAND = 0.05;
+
+	// AUTO CONSTANTS
+
+	public static final PIDConstants AUTO_TRANSLATION_PID =
+			Robot.getInstance().getRobotType() == RobotType.COMPETITION
+					? new PIDConstants(5.3, 0, 0.6) // practice
+					: Robot.getInstance().getRobotType() == RobotType.BONK
+							? new PIDConstants(6, 0, 0.1) // bonk
+							: Robot.getInstance().getRobotType() == RobotType.CRANE
+									? new PIDConstants(3.9, 0, 0.2) // crane
+									: new PIDConstants(0.1, 0, 0.1); // bobot TODO: tune
+
+	public static final PIDConstants AUTO_ROTATION_PID = new PIDConstants(5.5, 0, 1);
+	// 7 0 0.2
+
+	private static final double MAX_AUTO_SPEED =
+			500.0; // this seems to only affect rotation for some reason
+
+	private final SwerveDrive swerveDrive;
+	private final ShuffleboardTab drivebaseTab = Shuffleboard.getTab("Drivebase");
+
+	private boolean xWheelsEnabled = false;
+	private Rotation2d rotationSetpoint;
+
+	// shuffleboard variables
+	private GenericEntry headingCorrectionEntry;
+	private GenericEntry translationSpeedEntry;
+	private GenericEntry rotationSpeedEntry;
+	private GenericEntry turboRotationMultiplierEntry;
+	private GenericEntry xWheelsEntry;
+	private GenericEntry flipTranslationEntry;
+
+	@SuppressWarnings("StaticAssignmentInConstructor")
+	public DrivebaseSubsystem() {
+		initShuffleboard();
+
+		File swerveJsonDirectory;
+
+		switch (Robot.getInstance().getRobotType()) {
+			case CRANE:
+				swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "craneswerve");
+				System.out.println("Running crane swerve");
+				break;
+			case BONK:
+				swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "bonkswerve");
+				System.out.println("Running bonk swerve");
+				break;
+			case COMPETITION:
+			default:
+				swerveJsonDirectory = new File(Filesystem.getDeployDirectory(), "swerve");
+				System.out.println("Running competition swerve");
+		}
+
+		try {
+			swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(MAX_SPEED);
+		} catch (Exception e) {
+			System.out.println(e);
+			throw new RuntimeException();
+		}
+
+		// set drive motors to coast intially, this will be changed to brake on enable
+		swerveDrive.setMotorIdleMode(false);
+		// swerve drive heading will slowly drift over time as you translate. this method enables an
+		// active correction using pid. disabled until testing can be done
+		// TODO: this still needs to be improved
+		swerveDrive.setHeadingCorrection(headingCorrectionEntry.getBoolean(false), 2.0, 0.5);
+		swerveDrive.chassisVelocityCorrection = true;
+
+		swerveDrive.synchronizeModuleEncoders();
+
+		// Configure auto builder for PathPlanner
+		AutoBuilder.configureHolonomic(
+				this::getPose,
+				this::setPose,
+				this::getRobotSpeeds,
+				this::drive,
+				new HolonomicPathFollowerConfig(
+						AUTO_TRANSLATION_PID,
+						AUTO_ROTATION_PID,
+						MAX_AUTO_SPEED,
+						DRIVEBASE_RADIUS,
+						new ReplanningConfig()),
+				() ->
+						DriverStation.getAlliance()
+								.get()
+								.equals(Alliance.Red), // flip path if on the red alliance
+				this);
+
+		// LOW verbosity only sends field position, HIGH sends full drive data, MACHINE sends data
+		// viewable by AdvantageScope
+		SwerveDriveTelemetry.verbosity = TelemetryVerbosity.MACHINE;
+	}
+
+	/**
+	 * Drive with robot-relative chassis speeds
+	 *
+	 * @param speeds Robot-relative speeds
+	 */
+	public void drive(ChassisSpeeds speeds) {
+		swerveDrive.drive(speeds);
+	}
+
+	/**
+	 * Drive the robot
+	 *
+	 * @param fieldOriented Whether these values are field oriented
+	 */
+	public void drive(Translation2d translation, Rotation2d rotation, boolean fieldOriented) {
+		// if we're requesting the robot to stay still, lock wheels in X formation
+		if (translation.getNorm() == 0 && rotation.getRotations() == 0 && xWheelsEnabled) {
+			swerveDrive.lockPose();
+		} else if (rotationSetpoint != null) {
+			swerveDrive.drive(
+					translation.unaryMinus(), rotationSetpoint.getRadians(), fieldOriented, false);
+		} else {
+			swerveDrive.drive(translation.unaryMinus(), rotation.getRadians(), fieldOriented, false);
+		}
+	}
+
+	/**
+	 * Drives the robot using joystick inputs
+	 *
+	 * @param forward Forward motion in meters. A negative value makes the robot go backwards
+	 * @param strafe Strafe motion in meters. A negative value makes the robot go left
+	 * @param rotation Rotation2d value of robot rotation. CW is positive TODO: is this true?
+	 */
+	public Command driveJoystick(
+			DoubleSupplier forward,
+			DoubleSupplier strafe,
+			Supplier<Rotation2d> rotation,
+			BooleanSupplier turboRotation) {
+		return this.run(
+						() -> {
+							Rotation2d constrainedRotation =
+									Rotation2d.fromRotations(
+											SwerveMath.applyDeadband(
+															rotation.get().getRotations(), true, JOYSTICK_DEADBAND)
+													* MAX_SPEED
+													* (turboRotation.getAsBoolean()
+															? turboRotationMultiplierEntry.getDouble(1.0)
+															: 1)
+													* rotationSpeedEntry.getDouble(1.0)
+													* -1);
+							Translation2d constrainedTranslation =
+									new Translation2d(
+											SwerveMath.applyDeadband(forward.getAsDouble(), true, JOYSTICK_DEADBAND)
+													* MAX_SPEED
+													* translationSpeedEntry.getDouble(1.0),
+											SwerveMath.applyDeadband(strafe.getAsDouble(), true, JOYSTICK_DEADBAND)
+													* MAX_SPEED
+													* translationSpeedEntry.getDouble(1.0));
+							if (DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red) {
+								constrainedTranslation = constrainedTranslation.unaryMinus();
+							}
+							if (flipTranslationEntry.getBoolean(false)) {
+								constrainedTranslation = constrainedTranslation.unaryMinus();
+							}
+							drive(constrainedTranslation, constrainedRotation, true);
+						})
+				.withName("DriveCommand");
+	}
+
+	// this might need to be put in its own file due to complexity
+	public Command rotateToAngle(Supplier<Rotation2d> angle, boolean endWhenAligned) {
+		Command alignCommand =
+				Commands.runEnd(
+								() -> {
+									rotationSetpoint =
+											Rotation2d.fromRadians(
+													swerveDrive
+															.getSwerveController()
+															.headingCalculate(
+																	swerveDrive.getOdometryHeading().getRadians(),
+																	angle.get().getRadians()));
+								},
+								() -> {
+									rotationSetpoint = null;
+								})
+						.withName("RotateToAngleCommand");
+
+		if (endWhenAligned)
+			return alignCommand.until(
+					() ->
+							Math.abs(swerveDrive.getOdometryHeading().minus(angle.get()).getRotations())
+									< HEADING_CORRECTION_DEADBAND);
+		return alignCommand;
+	}
+
+	public Command forceRotateToAngle(Supplier<Rotation2d> angle) {
+		Command alignCommand =
+				this.run(
+						() ->
+								swerveDrive.drive(
+										new Translation2d(),
+										swerveDrive
+												.getSwerveController()
+												.headingCalculate(
+														swerveDrive.getOdometryHeading().getRadians(),
+														angle.get().getRadians()),
+										false,
+										false));
+
+		return alignCommand;
+	}
+
+	public void setMotorBrake(boolean brake) {
+		swerveDrive.setMotorIdleMode(brake);
+	}
+
+	public ChassisSpeeds getRobotSpeeds() {
+		return swerveDrive.getRobotVelocity();
+	}
+
+	public ChassisSpeeds getFieldSpeeds() {
+		return swerveDrive.getFieldVelocity();
+	}
+
+	/** Set the robot's pose. TODO: does this change yaw too? does this affect field oriented? */
+	public void setPose(Pose2d pose) {
+		swerveDrive.resetOdometry(pose);
+	}
+
+	/** Get the robot's pose */
+	public Pose2d getPose() {
+		return SubsystemConstants.USE_APRILTAGS_CORRECTION
+				? swerveDrive.getPose()
+				: swerveDrive.getOdometryOnlyPose();
+	}
+
+	/**
+	 * Reset the gyro angle. After this method is called, yaw will be zero. Pose is also updated to
+	 * zero rotation but same position
+	 */
+	public void resetGyro() {
+		swerveDrive.zeroGyro();
+	}
+
+	public void resetGyroTeleop() {
+		var angle =
+				DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+						? Rotation2d.fromDegrees(180)
+						: new Rotation2d();
+		setPose(new Pose2d(getPose().getTranslation(), angle));
+	}
+
+	/** Reset everything we can on the drivebase. To be used before auto starts */
+	public void resetRobot() {
+		swerveDrive.resetDriveEncoders();
+		resetGyro();
+		setPose(new Pose2d());
+	}
+
+	public void toggleXWheels() {
+		xWheelsEnabled = !xWheelsEnabled;
+		xWheelsEntry.setBoolean(xWheelsEnabled);
+	}
+
+	public Field2d getField() {
+		System.out.println(swerveDrive.field);
+
+		return swerveDrive.field;
+	}
+
+	private void initShuffleboard() {
+		NetworkTableInstance inst = NetworkTableInstance.getDefault();
+
+		headingCorrectionEntry =
+				drivebaseTab
+						.addPersistent("Heading Correction", true)
+						.withWidget(BuiltInWidgets.kToggleSwitch)
+						.withSize(2, 1)
+						.getEntry();
+		inst.addListener(
+				headingCorrectionEntry,
+				EnumSet.of(NetworkTableEvent.Kind.kValueAll),
+				event -> {
+					swerveDrive.setHeadingCorrection(event.valueData.value.getBoolean());
+				});
+
+		translationSpeedEntry =
+				drivebaseTab
+						.addPersistent("Translation Speed", 1.0)
+						.withWidget(BuiltInWidgets.kNumberSlider)
+						.withSize(2, 1)
+						.withProperties(Map.of("Min", 0.0))
+						.getEntry();
+		rotationSpeedEntry =
+				drivebaseTab
+						.addPersistent("Rotation Speed", 1.0)
+						.withWidget(BuiltInWidgets.kNumberSlider)
+						.withSize(2, 1)
+						.withProperties(Map.of("Min", 0.0))
+						.getEntry();
+		turboRotationMultiplierEntry =
+				drivebaseTab
+						.addPersistent("Turbo rotation multiplier", 1.0)
+						.withWidget(BuiltInWidgets.kNumberSlider)
+						.withSize(2, 1)
+						.withProperties(Map.of("Min", 0.5, "Max", 5.0))
+						.getEntry();
+		xWheelsEntry =
+				drivebaseTab
+						.addPersistent("X Wheels", xWheelsEnabled)
+						.withWidget(BuiltInWidgets.kBooleanBox)
+						.withSize(1, 1)
+						.getEntry();
+		xWheelsEnabled = xWheelsEntry.getBoolean(true);
+		flipTranslationEntry =
+				drivebaseTab
+						.add("Flip translation", false)
+						.withWidget(BuiltInWidgets.kToggleSwitch)
+						.withSize(1, 1)
+						.getEntry();
+	}
+
+	/** Get the YAGSL {@link SwerveDrive} object. */
+	public SwerveDrive getSwerveDrive() {
+		return swerveDrive;
+	}
+
+	private SysIdRoutine getDriveSysIdRoutine() {
+		SwerveModule[] modules = swerveDrive.getModules();
+		return new SysIdRoutine(
+				new SysIdRoutine.Config(),
+				new SysIdRoutine.Mechanism(
+						(Measure<Voltage> volts) -> {
+							for (SwerveModule module : swerveDrive.getModules()) {
+								module.getDriveMotor().setVoltage(volts.magnitude());
+								module.setAngle(0);
+							}
+						},
+						(SysIdRoutineLog log) -> {
+							log.motor("Drive1")
+									.voltage(BaseUnits.Voltage.of(modules[0].getDriveMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[0].getDriveMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[0].getDriveMotor().getVelocity()));
+							log.motor("Drive2")
+									.voltage(BaseUnits.Voltage.of(modules[1].getDriveMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[1].getDriveMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[1].getDriveMotor().getVelocity()));
+							log.motor("Drive3")
+									.voltage(BaseUnits.Voltage.of(modules[2].getDriveMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[2].getDriveMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[2].getDriveMotor().getVelocity()));
+							log.motor("Drive4")
+									.voltage(BaseUnits.Voltage.of(modules[3].getDriveMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[3].getDriveMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[3].getDriveMotor().getVelocity()));
+						},
+						this));
+	}
+
+	private SysIdRoutine getAngleSysIdRoutine() {
+		SwerveModule[] modules = swerveDrive.getModules();
+		return new SysIdRoutine(
+				new SysIdRoutine.Config(),
+				new SysIdRoutine.Mechanism(
+						(Measure<Voltage> volts) -> {
+							for (SwerveModule module : swerveDrive.getModules()) {
+								module.getAngleMotor().setVoltage(volts.magnitude());
+							}
+						},
+						(SysIdRoutineLog log) -> {
+							log.motor("Angle1")
+									.voltage(BaseUnits.Voltage.of(modules[0].getAngleMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[0].getAngleMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[0].getAngleMotor().getVelocity()));
+							log.motor("Angle2")
+									.voltage(BaseUnits.Voltage.of(modules[1].getAngleMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[1].getAngleMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[1].getAngleMotor().getVelocity()));
+							log.motor("Angle3")
+									.voltage(BaseUnits.Voltage.of(modules[2].getAngleMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[2].getAngleMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[2].getAngleMotor().getVelocity()));
+							log.motor("Angle4")
+									.voltage(BaseUnits.Voltage.of(modules[3].getAngleMotor().getVoltage()))
+									.angularPosition(
+											edu.wpi.first.units.Units.Rotations.of(
+													modules[3].getAngleMotor().getPosition()))
+									.angularVelocity(
+											edu.wpi.first.units.Units.Rotations.per(edu.wpi.first.units.Units.Second)
+													.of(modules[3].getAngleMotor().getVelocity()));
+						},
+						this));
+	}
+
+	public Command debugDriveFullPower() {
+		return this.runEnd(
+						() -> {
+							for (SwerveModule module : swerveDrive.getModules()) {
+								module.getDriveMotor().set(1.0);
+								module.setAngle(0);
+							}
+						},
+						() -> {
+							for (SwerveModule module : swerveDrive.getModules()) {
+								module.getDriveMotor().set(0.0);
+								module.setAngle(0);
+							}
+						})
+				.withName("DriveFullPower");
+	}
+
+	public Command driveSysIdQuasistatic(SysIdRoutine.Direction direction) {
+		return getDriveSysIdRoutine().quasistatic(direction);
+	}
+
+	public Command driveSysIdDynamic(SysIdRoutine.Direction direction) {
+		return getDriveSysIdRoutine().dynamic(direction);
+	}
+
+	public Command angleSysIdQuasistatic(SysIdRoutine.Direction direction) {
+		return getAngleSysIdRoutine().quasistatic(direction);
+	}
+
+	public Command angleSysIdDynamic(SysIdRoutine.Direction direction) {
+		return getAngleSysIdRoutine().dynamic(direction);
+	}
+}

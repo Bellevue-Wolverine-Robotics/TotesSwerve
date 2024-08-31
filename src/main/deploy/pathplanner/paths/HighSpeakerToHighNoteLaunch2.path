@@ -1,0 +1,121 @@
+{
+  "version": 1.0,
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 0.73,
+        "y": 6.62
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 1.4057878828008366,
+        "y": 6.876162812154685
+      },
+      "isLocked": false,
+      "linkedName": "TopSpeaker"
+    },
+    {
+      "anchor": {
+        "x": 5.413643259718952,
+        "y": 7.183134366268733
+      },
+      "prevControl": {
+        "x": 4.248810659783482,
+        "y": 7.238602585313279
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "LaunchHighNote"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.4,
+      "rotationDegrees": -172.45241554385072,
+      "rotateFast": true
+    },
+    {
+      "waypointRelativePos": 0.1,
+      "rotationDegrees": -126.93135629519831,
+      "rotateFast": false
+    },
+    {
+      "waypointRelativePos": 0.25,
+      "rotationDegrees": -148.60777368547065,
+      "rotateFast": false
+    }
+  ],
+  "constraintZones": [
+    {
+      "name": "New Constraints Zone",
+      "minWaypointRelativePos": 0.0,
+      "maxWaypointRelativePos": 0.3,
+      "constraints": {
+        "maxVelocity": 3.0,
+        "maxAcceleration": 2.4,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0
+      }
+    }
+  ],
+  "eventMarkers": [
+    {
+      "name": "intake",
+      "waypointRelativePos": 0,
+      "command": {
+        "type": "sequential",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "Intake"
+              }
+            },
+            {
+              "type": "named",
+              "data": {
+                "name": "RetractPivot"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rev launcher",
+      "waypointRelativePos": 0.55,
+      "command": {
+        "type": "parallel",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "RevLauncher"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -161.91852598288483,
+    "rotateFast": false
+  },
+  "reversed": false,
+  "folder": null,
+  "previewStartingState": {
+    "rotation": -120.0,
+    "velocity": 0
+  },
+  "useDefaultConstraints": true
+}
